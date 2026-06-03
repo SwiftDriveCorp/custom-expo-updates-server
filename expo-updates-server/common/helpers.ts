@@ -40,7 +40,10 @@ export async function getPrivateKeyAsync() {
   return pemBuffer.toString('utf8');
 }
 
-export async function getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion: string) {
+export async function getLatestUpdateBundlePathForRuntimeVersionAsync(
+  runtimeVersion: string,
+  platform?: string,
+) {
   const updatesDirectoryForRuntimeVersion = `updates/${runtimeVersion}`;
   if (!fsSync.existsSync(updatesDirectoryForRuntimeVersion)) {
     throw new Error('Unsupported runtime version');
@@ -57,6 +60,28 @@ export async function getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVer
   )
     .filter(truthy)
     .sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+
+  // When a platform is given, return the newest bundle that actually contains that
+  // platform. A single-platform publish then leaves the other platform's latest folder
+  // (and thus its manifest id) untouched — clients on that platform are not re-prompted
+  // to "update" to an identical bundle.
+  if (platform) {
+    for (const directory of directoriesInUpdatesDirectory) {
+      const candidate = path.join(updatesDirectoryForRuntimeVersion, directory);
+      try {
+        const metadataJson = JSON.parse(
+          await fs.readFile(path.join(candidate, 'metadata.json'), 'utf-8'),
+        );
+        if (metadataJson?.fileMetadata?.[platform]) {
+          return candidate;
+        }
+      } catch {
+        // ignore folders without a readable metadata.json
+      }
+    }
+    throw new Error('Unsupported runtime version');
+  }
+
   return path.join(updatesDirectoryForRuntimeVersion, directoriesInUpdatesDirectory[0]);
 }
 

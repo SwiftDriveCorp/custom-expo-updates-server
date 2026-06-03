@@ -54,7 +54,7 @@ export default async function manifestEndpoint(req: NextApiRequest, res: NextApi
 
   let updateBundlePath: string;
   try {
-    updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
+    updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion, platform);
   } catch (error: any) {
     res.statusCode = 404;
     res.json({
