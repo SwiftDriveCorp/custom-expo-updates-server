@@ -10,6 +10,14 @@ import {
   getMetadataAsync,
 } from '../../common/helpers';
 
+// The launch asset (Hermes bundle) is a binary file that routinely exceeds Next.js's
+// default 4MB API-route response limit. Disable the limit so large bundles are served whole.
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
+
 export default async function assetsEndpoint(req: NextApiRequest, res: NextApiResponse) {
   const { asset: assetName, runtimeVersion, platform } = req.query;
 
@@ -33,7 +41,7 @@ export default async function assetsEndpoint(req: NextApiRequest, res: NextApiRe
 
   let updateBundlePath: string;
   try {
-    updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion);
+    updateBundlePath = await getLatestUpdateBundlePathForRuntimeVersionAsync(runtimeVersion, platform);
   } catch (error: any) {
     res.statusCode = 404;
     res.json({
